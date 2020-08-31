@@ -16,6 +16,7 @@ from string import capwords
 import mysql.connector
 from mysql.connector import Error
 import pandas as pd
+import tkinter as tk
 
 # TODO add opt cats to add_ingredient and add_recipe
     # See about removing the xl variable and using the _json dict from Ingredients and Recipes
@@ -26,18 +27,18 @@ LABOR = 0
 MARKUP = 0
 
 class Food_Cost():
-    #app
+    """Application for calculating the cost of a recipe from cost and quantity of ingredients and labor"""
     def __init__(self, args=None):
         self.store = Store(self.login(args))
-        self.xl = { "ing_req_cats":   ["name", "unit", "quantity", "price"],
-                    "ing_opt_cats":   ["vendor", "notes", "calories", "servings"],
-                    "rec_req_cats":      ["name", "ingredients", "quantites", "preptime"],
-                    "rec_opt_cats":      ["notes", "yield"]}
+        self.xl = { "ing_req_cats": ["name", "unit", "quantity", "price"],
+                    "ing_opt_cats": ["vendor", "notes", "calories", "servings"],
+                    "rec_req_cats": ["name", "ingredients", "quantites", "preptime"],
+                    "rec_opt_cats": ["notes", "yield"]}
         self.main_menu()
 
     def __get_db_max__(self):
-        # Searches the current directory for files starting with db
-        # Returns the next iteration after highest db number
+        """Searches the current directory for files starting with 'db'
+        Returns the next iteration after highest db number"""
         filenames = os.listdir()
         filenames.sort()
         maxnum = 0
@@ -53,6 +54,7 @@ class Food_Cost():
         return outfile + str(maxnum + 1) + '.json'
  
     def __parse_phone__(self, p):
+        """Ensure phone number is valid"""
         phone_re = re.compile(r'\d{10}$')
         seq_type= type(p)
         p = seq_type().join(filter(seq_type.isdigit, p))
@@ -61,6 +63,7 @@ class Food_Cost():
         return None    
             
     def __parse_email__(self, e):
+        """Ensure email address is formatted correctly"""
         email_re = re.compile(r'''(
         [a-zA-Z0-9._%+-]+               # username
         @                               # @
@@ -72,6 +75,7 @@ class Food_Cost():
         return None
 
     def __vette_pw__(self, p):
+        """Enssure password meets requirements"""
         length_error = len(p) < 8
         digit_error = re.search(r"\d", p) is None
         uppercase_error = re.search(r"[A-Z]", p) is None
@@ -93,8 +97,7 @@ class Food_Cost():
                     error_list.append(k)
             return error_list
 
-    def __choices__(self, title, choices):
-        
+    def __choices__(self, title, choices):      
         """
         Creates and validates choices in a numbered list\n
         returns int value or none if last option is choosen\n 
@@ -117,9 +120,10 @@ class Food_Cost():
                 print('Invalid entry')
 
     def __pause__(self):
-        pause = input('\n< Press \'enter\' to return to go back > ')
+        pause = input('\n< Press \'enter\' to go back > ')
 
     def __create_database__(self, store):
+        """Creates a new Store database"""
         store_id = store['id']
         os.system('cls')
         print(f'==== STORE ID : {store_id} ====\n\nInitial values:\n')
@@ -150,6 +154,7 @@ class Food_Cost():
         return db
 
     def __update_store__(self, updated_store):
+        """Updates data in the current Store. Database will not be updated until __save__ is called"""
         global LABOR
         global MARKUP
         db = {  'creds':       {'db_file': updated_store['db_file'], 
@@ -164,7 +169,6 @@ class Food_Cost():
         return db
 
     def __update_json__(self, dct, filepath, dict_name=None):
-        #dct = __encode_json__(dct)
         if not dict_name:
             dict_name = 'item'
         with open(filepath, 'w') as f:
@@ -189,6 +193,7 @@ class Food_Cost():
         print(df)
 
     def __get_data_ranges__(self, req_keys, optional_keys=None):
+        """Return user-inputted ranges needed to parse excel data"""
         while True:
             try:
                 row_range = str(input('Row range <eg. 1-10> '))
@@ -228,8 +233,7 @@ class Food_Cost():
         return row_range, col_range, col_dict, opt_dict
 
     def __check_ingredient__(self, ingredient, recipe):
-        #print(ingredients)
-        #print(ingredient, end='')
+        """Check if ingredient already exists in a recipe"""
         if ingredient in self.store.ingredients:
             return self.store.ingredients
         else:
@@ -239,7 +243,8 @@ class Food_Cost():
     def __save__(self):
         self.__update_json__(self.store._json(), self.store.db_file)
         
-    def login(self, args=None):    
+    def login(self, args=None):
+        """Login section"""
         # TODO encript stores.json
         stores = __load_json__('stores.json')
         while True:
@@ -277,11 +282,8 @@ class Food_Cost():
             time.sleep(2)
 
     def create_store(self, stores, update=None):
-        """ Optional 'update' set to store_id"""
-        #print(f'{stores=}')
-        #print(f'{update=}')
-        #print(self.__get_db_max__())
-        #self.__pause__()
+        """Create a new Store or update information on an existing Store"""
+        """Optional 'update' set to store_id"""
         if not update:
             store = {}
         keys = [('Store name', 'name'), 
@@ -387,6 +389,7 @@ class Food_Cost():
             return stores
         
     def main_menu(self):
+        """Main Menu"""
         choice = None
         while True:
             os.system('cls')
@@ -477,6 +480,7 @@ class Food_Cost():
                         time.sleep(2)
                         break
                     elif choice == 4:
+                        # Search database
                         while True:
                             result = self.search_item(self.store.all_items)
                             class_name = result.__class__.__name__
@@ -490,6 +494,7 @@ class Food_Cost():
                                 continue
                         break
                     elif choice == 5:
+                        # List all items in database
                         while True:
                             ch = self.__choices__('\n--- LIST ALL ---', ['Ingredients', 'Recipes'])
                             if not ch:
@@ -518,6 +523,7 @@ class Food_Cost():
                             break
                         break
                     elif choice == 6:
+                        # Import data from excel or connect to an external database
                         ch = self.__choices__('\n___ CONNECT TO DATABASE ___', ['Import Excel', 'Connect to JSON database', 'Connect to SQL database'])
                         if not ch:
                             break
@@ -533,9 +539,11 @@ class Food_Cost():
                         pause()
                         break
                     elif choice == 7:
+                        # Save
                         self.__save__()
                         break
                     elif choice == 8:
+                        # Quit
                         yn = input('\nAny changes made since your last save will be lost, are you sure? (Y/N) ')
                         if yn.lower() == 'y':
                             os.system('cls')
@@ -548,8 +556,9 @@ class Food_Cost():
                     print('Invalid input.')                           
 
     def add_ingredient(self, name=None, uuid=None):
-        # TODO shouldn't need to return updated lists now that this is a class, refactor
-        ret = False
+        """Add a new ingredient to database\n
+        If ingredient exists, user is prompted to update ingredient information"""
+        ret = False # ret is a bool that is used to return to add_recipe if a name is passed to add_ingredient
         while True:
             print('\n+++ ADD / UPDATE INGREDIENT +++\n(leave blank to return to main menu)\n(type \'list\' to list all ingredients)\n\n(enter an existing ingredient to update)')
             if name:
@@ -601,6 +610,7 @@ class Food_Cost():
                 return
 
     def update_ingredient(self, ingredient):
+        """Update an existing ingredient"""
         # TODO DRY, iterate through .factors (i.e. .name, .unit, .price) pass each to a function?
         # TODO this does not iterate through optional information
         print(f'\n+++ UPDATE INGREDIENT \'{ingredient.name.upper()}\' +++\n(Leave choices blank if you wish to retain original values)')    
@@ -647,6 +657,7 @@ class Food_Cost():
         return Ingredient(ingredient.name, unit, quantity, price)
 
     def add_recipe(self):
+        """Add a a new Recipe"""
         while True:
             print('\n*** ADD / UPDATE RECIPE ***\n(Leave blank to return to main menu)\n(enter an existing recipe to update) ')
             name = input('Name of recipe? ')
@@ -730,6 +741,7 @@ class Food_Cost():
                                 break
 
     def update_recipe(self, recipe):
+        """Update an existing Recipe"""
         print(f'\n*** UPDATE RECIPE \'{recipe.name.upper()}\' ***\n(Leave choices blank if you wish to retain original values\n(Type \'remove\' to remove an ingredient)')
         preptime = input(f'Current prep time : {recipe.preptime} minutes, new prep time? ')
         if not preptime:
@@ -801,18 +813,19 @@ class Food_Cost():
                             break
 
     def update_cost(self, term, var):
+        """Used for updating global LABOR and MARKUP variables to new values"""
         while True:
             out = input(f'Current {term} : {var} - new {term}? ')
             if not out:
                 print(f'    {term.capitalize()} retained.')
                 return var
             try:
-                out = float(out)
-                return out
+                return float(out)
             except ValueError:
                 print('Unrecognized input. Please enter a number.')
 
     def search_item(self, search_dict):
+        """Search the database for an item"""
         print(f'\n<<< SEARCH DATABASE >>>\n(Leave blank to return to main menu)')
         while True:
             search = input(f'Search for? ')
@@ -844,10 +857,10 @@ class Food_Cost():
                 except ValueError:
                     print('Invalid choice.')
                     continue
-
             print(f'No items found.')
 
     def connect_xl(self):
+        """Connect to an external excel sheet"""
         # Load workbook
         while True:
             types = ['xls', 'xlsx', 'xlsm']
@@ -906,6 +919,13 @@ class Food_Cost():
                 print(f'Sheet \'{sheet}\' does not exist.')
 
     def find_xl_ingredients(self, ws):
+        """Load ingredients from an excel sheet"""
+        """
+        Required columns:   name    unit    quanty  price
+        i.e:                cheese  slices  20      3.99
+                            mustard oz      24      4.99
+                            bun     buns    8       2.50
+        """
         rows, cols, reqs, optional = self.__get_data_ranges__(self.xl['ing_req_cats'], self.xl['ing_opt_cats'])
         count = 0
         err_rows = []
@@ -947,7 +967,6 @@ class Food_Cost():
             except Exception as e:
                 err_rows.append(row)
                 continue
-        
         print(f'\nAdded {count} ingredient(s). ', end='')
         if len(err_rows) > 0:
             print(f'Ingredients in row(s) {err_rows} could not be updated due to missing data requirements.')
@@ -955,6 +974,16 @@ class Food_Cost():
             print('')
 
     def find_xl_recipes(self, ws):
+        """Load recipes from an excel sheet\n
+        Required columns with example:   
+        name    ingredients quantity    preptime\n
+        Burger  patty       1           5\n
+        Burger  cheese      2           5\n
+        Burger  bun         2           5\n
+        Hotdog  frank       1           2\n
+        Hotdog  ketchup     4           2\n
+        Hotdog  bun         1           2\n
+        """
         rows, cols, reqs, optional = self.__get_data_ranges__(self.xl['rec_req_cats'], self.xl['rec_opt_cats'])
         count = 0
         err_rows = []
@@ -966,14 +995,10 @@ class Food_Cost():
         prep = None
         notes = None
         yld = None
-        #print(f'{rows[1]+1=}   {cols[1]=}')
         for row in range(rows[0], rows[1] + 2): # Needs to read one extra row to add preptime
             for col in range(cols[0], cols[1] + 1): 
                 val = ws.cell(row=row, column=col).value
                 # TODO DRY
-                #print(f'{row=}')
-                #print(f'{col=}')
-
                 if row == rows[1] +1 and col == cols[1]:
                     ing_list_tuple.append(prep)
                     if notes:
@@ -986,9 +1011,6 @@ class Food_Cost():
                 elif col == reqs['name']:
                     if val not in self.store.recipes:
                         if name:
-                            #print(f'{name=}')
-                            #print(f'{prep=}')
-                            #print(ing_list_tuple)
                             # Recipe complete
                             ing_list_tuple.append(prep)
                             if notes:
@@ -1004,18 +1026,14 @@ class Food_Cost():
                         name = val
                         if val is None:
                             continue
-                        #if name:
                         print('\nNEW RECIPE ' + name)
                         self.store.recipes[name] = []
                         ing_list_tuple = []
-                        #prep = None
-                        #print(f'{val=}')
                 elif col == reqs['ingredients']:
                     try:
                         ingredient = val.lower()
                     except:
                         pass
-                    #print(val)
                 elif col == reqs['quantites']:
                     quantity = val
                 elif col == reqs['preptime']:
@@ -1027,14 +1045,9 @@ class Food_Cost():
                     if val:
                         yld = ('yld', val)
                 if ingredient and quantity:
-                    #print(f'{ingredient=}')
                     ing_list_tuple.append((ingredient, quantity))
                     ingredient = None
                     quantity = None
-                
-        #for key, value in recipe_dict.items():
-        #    print(f'{key} : {value}')
-        
         for recipe in self.store.recipes:
             name = None
             notes = None
@@ -1042,21 +1055,16 @@ class Food_Cost():
             ings = self.store.recipes[recipe]
             ing_list = []
             for i in ings:
-                #print(f'{i=}')
                 if not i:
                     continue
                 name = i[0]
                 if name != 'preptime':
                     ingredient = self.__check_ingredient__(name, recipe)
                     ing_list.append((ingredient[name], i[1]))
-                    #print(f'{ingredient[name]=}')  
                 else:
-                    #print(f'{i[1]=}')
                     prep = i[1]
                     if not prep:
                         prep = 1
-                    #print(f'{prep=}')
-
             try:
                 # TODO Test this
                 notes = self.store.recipes[recipe][2]
@@ -1072,7 +1080,33 @@ class Food_Cost():
 
 class Store:
     def __init__(self, store):
-        """ Required 'store' is a json db file dict """
+        """ 
+        Data and functions pertaining to a specific Store (i.e. restaurant)\n
+        Required 'store' is a json db file dict containing:\n
+            creds {db_file: (name of the database file), id: (assigned store id number), branch: (full name of the store)}\n
+            costs {labor: (current average cost of labor for this store), markup: (percentage to markup recipes for consumers)}\n
+            sql_creds {host: (location of database), database: (database name), user: (login user name), pass: (login user password)}\n
+            ingredients {ingredients stored in the databse as:\n 
+                            'name : (ingredients are always lowercase) {\n
+                                name:, \n
+                                unit: (measurement i.e. slices of bread or oz of mustard), \n
+                                quantity: (how many total in a package, i.e. 24 slices of cheeze or 32 oz of ketchup), \n
+                                price: (total price of a package), \n
+                                calories: (optional. total calories in a package), \n
+                                servings: (optional. total servings in a package), \n
+                                notes: (instructions or whatever is needed), \n
+                                vendor: (who sells this to the restaurant), \n
+                                uuid: (unique item identifier)}}\n
+            recipes {recipes stored in the database as:\n
+                            Name : (Recipes are always capitalized) {\n
+                                name:,\n
+                                preptime: (how long this takes to make),\n
+                                ingredients: [list of __tuples___: ingredient name, how many (unit of measurement) in recipe (i.e. (cheese, 1))],\n
+                                notes: (instructions),\n
+                                yld: (how much does this recipe make),\n
+                                togo: (packaging associated with recipe)\n
+                                is_ingredient: (bool. Recipe used in another rrecipe, i.e Special Sauce Recipe used as special sauce in Burger Recipe),\n
+                                uuid: (unique item identifier)}}"""
         self.creds = store['creds']
         self.branch = self.creds['branch']
         self.id = self.creds['id']
@@ -1134,6 +1168,19 @@ class Store:
         return recipes 
 
 class Ingredient:
+    """Ingredient object containing the following attributes:\n
+        name (required lowercase),\n
+        unit (how is this ingredient measured, i.e. oz, or slices),\n
+        quantity (how many of unit total in a package, i.e. 24oz or 50 slices),\n
+        price (total price of package)\n
+        optional:\n
+            calories (total calories in package),\n
+            servings (total servings in a package),\n
+            notes (prep instructions, etc.),\n
+            vendor (who sells this package),\n
+            is_recipe (bool. does this ingredient also exsist in the recipe databse, i.e. Special Sauce),\n
+            uuid (unique identifier for each item in database)
+    """
     def __init__(self, name, unit, quantity, price, calories=0, servings=1, notes=None, vendor=None, is_recipe=False, uuid=None):
         self.uuid = uuid
         if not self.uuid:
@@ -1171,6 +1218,7 @@ class Ingredient:
         return d
 
     def print_ingredient(self):
+        # Old printing method
         print(f'{self.name} | {self.quantity} {self.unit} | ${self.price}', end='')
         if self.calories != 0:
             print(f' | calories {self.calories} | servings {self.servings} | calories per {self.unit} {self.calories_per_unit}', end='')
@@ -1181,6 +1229,7 @@ class Ingredient:
         print('')
 
     def _print_ingredient(self):
+        # Dataframe print
         out = {}
         for k, v in self._json().items():
             out[k] = [v]
@@ -1194,6 +1243,17 @@ class Ingredient:
         raise NotImplementedError
 
 class Recipe:
+    """Recipe object contianing the folloing attributes:\n
+        name (names are requied to be Capitalized),\n
+        ingredients (list of tuples containign ingredient name and quantity, i.e. (bread, 2)),\n
+        preptime (how long does it take to make, default 1 minute),\n
+        optional:\n
+            notes (recipe instructions, etc.),\n
+            yld (how much does this make, default 1, i.e. 1 Burger)\n
+            togo_pack (NotYetImplemented),\n
+            is_ingredient (bool. Recipe also used in other recipies, i.e. Special Sauce),\n
+            uuid (unique identifier for each item in a databse)\n
+    """
     def __init__(self, name, ingredients=[], preptime=1, notes=None, yld=1, togo_pack=None, is_ingredient=False, uuid=None):
         self.uuid = uuid
         if not self.uuid:
@@ -1274,6 +1334,7 @@ class Packaging:
         raise NotImplementedError
 
 class Cost:
+    """Calculations for recipe LABOR and MARKUP"""
     def __init__(self, recipe):
         global LABOR
         global MARKUP
@@ -1282,7 +1343,7 @@ class Cost:
         self.recommended_price = recipe._food_cost() * (MARKUP / 100)
         # TODO yld outputs per recipe
 
-# TODO Update
+# TODO Update and add to FoodCost
 def connect_sql(sql_creds):
     # TODO Flesh this out
     creds = {}
@@ -1309,7 +1370,7 @@ def connect_sql(sql_creds):
         #else:   
         #    return ings, recs
 
-# TODO Update
+# TODO Update and add to FoodCoast
 def get_sql(creds, table_name):
     count = 0
     err = 0
@@ -1355,14 +1416,14 @@ def get_sql(creds, table_name):
     return outdict
 
 def __generate_id__(prefix):
-    # Creates an unique id for each object, for database storage
-    # Objects are recreated when decoded from json, so it is necessary to
-    # create the id only when the opject is first created
+    """Creates an unique id for each object, for database storage
+    Objects are recreated when decoded from json, so it is necessary to
+    create the id only when the opject is first created"""
     ide = uuid.uuid4()
     return prefix + ide.hex
 
 def __decode_json__(d):
-    # Creates dict containing proper data types including tuples and objects
+    """Creates dict containing proper data types including tuples and objects"""
     outdict = {}
     for k, v in d.items():
         if isinstance(v, str) or isinstance(v, int) or isinstance(v, float):
@@ -1385,7 +1446,7 @@ def __decode_json__(d):
     return outdict
 
 def __list_gen__(v):
-    # Creates a list containing proper data types
+    """Creates a list containing proper data types"""
     if isinstance(v, str) or isinstance(v, int) or isinstance(v, float):
         return v
     elif v is None:
@@ -1404,7 +1465,7 @@ def __list_gen__(v):
         return __decode_json__(v.__dict__)
 
 def __load_json__(filename, sub=None):
-    # Returns the dict from a json file
+    """Returns the dict from a json file"""
     try:
         with open(filename) as f:
             data = json.load(f)
@@ -1415,7 +1476,7 @@ def __load_json__(filename, sub=None):
     return data
 
 def __encode_json__(dct):
-    # Prepares dct for json dump
+    """Prepares dct for json dump"""
     d = {}
     for k, v in dct.items():
         if isinstance(v, object) and not (isinstance(v, list) or isinstance(v, tuple)):
@@ -1426,7 +1487,7 @@ def __encode_json__(dct):
     return d
 
 def print_json(json_dict, keys=None):
-    # Debugging tool for printing dicts in a more friendly way
+    """Debugging tool for printing dicts in a more friendly way"""
     try:
         for k, v in json_dict.items():
             if isinstance(v, dict):
@@ -1438,7 +1499,7 @@ def print_json(json_dict, keys=None):
 
 if __name__ == '__main__':    
     args = None
-    # Provided command line email and password?
+    # args are optional provided command line email and password to skip login requirement
     if len(sys.argv) == 3:
         args = sys.argv
     app = Food_Cost(args)
