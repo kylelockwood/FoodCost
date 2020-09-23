@@ -30,6 +30,7 @@ MARKUP = 0
 class Food_Cost():
     """Application for calculating the cost of a recipe from cost and quantity of ingredients and labor"""
     def __init__(self, args=None):
+        self.store = None
         self._login(args)
         self.xl = { "ing_req_cats": ["name", "unit", "quantity", "price"],
                     "ing_opt_cats": ["vendor", "notes", "calories", "servings"],
@@ -39,9 +40,9 @@ class Food_Cost():
         self.main_menu()
 
     def _login(self, args=None):
-        """Login section"""
+        """Login to store in stores.db"""
         # TODO encript stores.json
-            
+
         # Window
         self.login_window = tk.Tk()
         self.login_window.title('Food Cost')
@@ -52,7 +53,7 @@ class Food_Cost():
         title_label.grid(column=1, row=0, columnspan=5, pady=15)
         
         # User input
-        user_label = tk.Label(self.login_window, text='User name : ')
+        user_label = tk.Label(self.login_window, text='Email : ')
         user_label.grid(row=2, column=1, padx=10)
         self.user_box = tk.Entry(self.login_window, width=30)
         self.user_box.grid(column=2, row=2, columnspan=4, pady=5, sticky='W')
@@ -69,9 +70,9 @@ class Food_Cost():
 
         # Buttons
         login_button = tk.Button(self.login_window, text='Login', command=self.__check_login__, width=10)
-        login_button.grid(column=2, row=4, pady=5, padx=5)
+        login_button.grid(column=2, row=4, pady=10, padx=5)
         new_button = tk.Button(self.login_window, text='New Store', command=self._create_store, width=10)
-        new_button.grid(column=4, row=4, pady=5, padx=5)
+        new_button.grid(column=4, row=4, pady=10, padx=5)
         
         self.login_window.mainloop()
         
@@ -185,6 +186,7 @@ class Food_Cost():
     def __submit_new_store__(self):
         store = {}
         stores = __load_json__('stores.json')
+        
         # Error checking
         # TODO put this in the boxes, but make it disappear when box selected and red font
         error_message = []
@@ -221,8 +223,6 @@ class Food_Cost():
             markup = float(self.markup_box.get())
         except ValueError:
             error_message.append('Markup percentage must be a number.')
-
-
         if error_message:
             message = ''
             for line in error_message:
@@ -668,11 +668,13 @@ class Food_Cost():
                             else:
                                 break
                     elif choice == 2:
-                        ch = self.__choices__('\n~~~~ ADD / UPDATE / REMOVE ITEM ~~~~', ['Add / Update', 'Remove'])
+                        os.system('cls')
+                        ch = self.__choices__('~~~~ ADD / UPDATE / REMOVE ITEM ~~~~\n', ['Add / Update', 'Remove'])
                         if not ch:
                             break
                         elif ch == 1:
-                            cho = self.__choices__('\n~~~ ADD / UPDATE ITEM ~~~', ['Ingredient', 'Recipe'])
+                            os.system('cls')
+                            cho = self.__choices__('~~~ ADD / UPDATE ITEM ~~~\n', ['Ingredient', 'Recipe'])
                             if not cho:
                                 break
                             elif cho == 1:
@@ -709,7 +711,8 @@ class Food_Cost():
                             self.__pause__()
                             break          
                     elif choice == 3:
-                        print('\n<<< COST VARIABLES >>>\n(leave blank to retain current value)')
+                        os.system('cls')
+                        print('<<< COST VARIABLES >>>\n\n(leave blank to retain current value)')
                         global LABOR 
                         global MARKUP 
                         LABOR = self.update_cost('labor', LABOR)
@@ -718,6 +721,7 @@ class Food_Cost():
                         time.sleep(2)
                         break
                     elif choice == 4:
+                        os.system('cls')
                         # Search database
                         while True:
                             result = self.search_item(self.store.all_items)
@@ -725,16 +729,22 @@ class Food_Cost():
                             if not result:    
                                 break
                             elif class_name == 'Ingredient':
+                                print()
                                 self.__print_frame__({result.name : result}, self.xl['ing_req_cats'] + self.xl['ing_opt_cats'])
+                                self.__pause__()
                             elif class_name == 'Recipe':
+                                print()
                                 result.print_recipe()
+                                self.__pause__()
                             else:
                                 continue
                         break
                     elif choice == 5:
+                        os.system('cls')
                         # List all items in database
                         while True:
-                            ch = self.__choices__('\n--- LIST ALL ---', ['Ingredients', 'Recipes'])
+                            os.system('cls')
+                            ch = self.__choices__('--- LIST ALL ---\n', ['Ingredients', 'Recipes'])
                             if not ch:
                                 break
                             elif ch == 1:
@@ -761,8 +771,9 @@ class Food_Cost():
                             break
                         break
                     elif choice == 6:
+                        os.system('cls')
                         # Import data from excel or connect to an external database
-                        ch = self.__choices__('\n___ CONNECT TO DATABASE ___', ['Import Excel', 'Connect to JSON database', 'Connect to SQL database'])
+                        ch = self.__choices__('___ CONNECT TO DATABASE ___\n', ['Import Excel', 'Connect to JSON database', 'Connect to SQL database'])
                         if not ch:
                             break
                         elif ch == 1:
@@ -1064,7 +1075,8 @@ class Food_Cost():
 
     def search_item(self, search_dict):
         """Search the database for an item"""
-        print(f'\n<<< SEARCH DATABASE >>>\n(Leave blank to return to main menu)')
+        os.system('cls')
+        print(f'<<< SEARCH DATABASE >>>\n\n(Leave blank to return to main menu)')
         while True:
             search = input(f'Search for? ')
             if not search:
@@ -1380,7 +1392,15 @@ class Store:
         ing_dct = __decode_json__(self.ingredients_raw)
         ingredients = {}
         for name, i in ing_dct.items():
-            ingredients[name] = Ingredient(i['name'], i['unit'], i['quantity'], i['price'], calories=i['calories'], servings=i['servings'], notes=i['notes'], vendor=i['vendor'], uuid=i['uuid'])
+            ingredients[name] = Ingredient( i['name'], 
+                                            i['unit'], 
+                                            i['quantity'], 
+                                            i['price'], 
+                                            calories=i['calories'], 
+                                            servings=i['servings'], 
+                                            notes=i['notes'], 
+                                            vendor=i['vendor'], 
+                                            uuid=i['uuid'])
         return ingredients
 
     def __construct_recipes__(self):
@@ -1543,11 +1563,11 @@ class Recipe:
             print(self.ingredient_list)
             if self.__display_calories__:
                 print('Calories          : ' + str(round(self.calories, 2)))
-            print('Food cost         : $' + str(round(self.food_cost(), 2)))
+            print('Food cost         : $' + str(round(self._food_cost(), 2))) # TODO this is inaccurate
             print('Labor cost        : $' + str(round(cost.labor_cost, 2)))
             print('Total cost        : $' + str(round(cost.total_cost, 2)))
             print('Recommended price : $' + str(round(cost.recommended_price, 2)))
-        except:
+        except Exception as e:
             pass
 
     def _json(self):
